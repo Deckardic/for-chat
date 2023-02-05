@@ -1,0 +1,369 @@
+#! /usr/bin/python
+# -*- coding utf -8 -*-
+
+import datetime
+from Form_Libr import *
+from BD_Libr import *
+import re
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from datetime import date
+
+
+''' применяемые конструкции в данной программе :
+    re.findall('\d+', Variable)[0] - находим регулярное выражение \d+ (только числа) в аргументе 'Variable' '''
+
+dict_primary = {}
+
+dict_price = {'VR Arena': {1: {0: 400, 1: 500}, 2: {0: 600, 1: 800}, 3: {0: 960, 1: 1300}},
+              'VR Classic': {1: {0: 250, 1: 350}, 2: {0: 400, 1: 500}, 3: {0: 700, 1: 800}},
+              'VR Quest': {1: {0: 950, 1: 950}, 2: {0: 950, 1: 950}, 3: {0: 1700, 1: 1700}},
+              'Economy': {1: {0: 7500, 1: 9500}, 2: {0: 7500, 1: 9500}, 3: {0: 7500, 1: 9500}},
+              'VIP': {1: {0: 14500, 1: 16500}, 2: {0: 14500, 1: 16500}, 3: {0: 14500, 1: 16500}},
+              'Solemn': {1: {0: 11500, 1: 13500}, 2: {0: 11500, 1: 13500}, 3: {0: 11500, 1: 13500}},
+              'Legendary': {1: {0: 11500, 1: 13500}, 2: {0: 11500, 1: 13500}, 3: {0: 11500, 1: 13500}},
+              'Prepayment': {1: {0: 0, 1: 0}, 2: {0: 0, 1: 0}, 3: {0: 0, 1: 0}}}
+
+form_db = """ CREATE TABLE IF NOT EXISTS Cashbox (id INTEGER, Date TEXT, Time TEXT, Name TEXT, Phone TEXT, Admin TEXT,
+              Service TEXT, Number TEXT,  Time_game TEXT, Discount TEXT, Payment TEXT, Total_Sum TEXT, Cash_box TEXT,
+              Take_away TEXT, Comment TEXT  ) """
+
+qwery = ''' INSERT INTO Cashbox (id, Date, Time, Name , Phone, Admin, Service, Number, Time_game, Discount, Payment,
+            Total_Sum, Cash_box, Take_away, Comment) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
+
+def Creat_dict(Id):
+    global dict_primary
+    dict_us = {'Date': 0, 'Time': 0, 'Name': 0, 'Phone': 0, 'Admin': 0, 'Service': 0, 'Number': 0, 'Time_game': 0,
+               'Discount': 0, 'Payment': 0, 'Total_Sum': 0, 'Cash_box': 0, 'Take away': 0, 'Comment': 0}
+    dict_primary[Id] = dict_us
+    return dict_primary
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+''' Функция создает лейблы на главной форме win  значения берет из словаря Dict_Label'''
+def Creat_label():
+    Dict_label = {1: {'world': 'ID Киента', 'color': 'white',           'posX': 20,  'posY': 60, 'len': 120},
+                  2: {'world': 'Услуга', 'color': 'white',              'posX': 160, 'posY': 60, 'len': 120},
+                  3: {'world': 'Кол-во', 'color': 'white',              'posX': 300, 'posY': 60, 'len': 90},
+                  4: {'world': 'Время', 'color': 'white',               'posX': 410, 'posY': 60, 'len': 90},
+                  5: {'world': '% sale', 'color': 'white',              'posX': 520, 'posY': 60, 'len': 90},
+                  6: {'world': 'Скидка', 'color': 'white',              'posX': 630, 'posY': 60, 'len': 90},
+                  7: {'world': 'Сумма', 'color': 'white',               'posX': 740, 'posY': 60, 'len': 110},
+                  8: {'world': 'Оплата', 'color': 'white',              'posX': 870, 'posY': 60, 'len': 120},
+                  9: {'world': 'касса на начало дня', 'color': 'white', 'posX': 50,  'posY': 445, 'len': 220},
+                  10: {'world': 'Наличка', 'color': 'white',            'posX': 410, 'posY': 445, 'len': 100},
+                  11: {'world': 'Безнал', 'color': 'white',             'posX': 300, 'posY': 445, 'len': 100},
+                  12: {'world': 'Перевод', 'color': 'white',            'posX': 520, 'posY': 445, 'len': 100},
+                  13: {'world': 'Итого', 'color': 'white',              'posX': 650, 'posY': 445, 'len': 100},
+                  14: {'world': 'касса', 'color': 'white',              'posX': 770, 'posY': 445, 'len': 100},
+                  15: {'world': current_date, 'color': 'white',         'posX': 20, 'posY': 20, 'len': 260}}
+
+    for key in Dict_label:
+        label = tk.Label(win, text=Dict_label[key]['world'], bg='#9070CC', fg=Dict_label[key]['color'],
+                         font=('Arial', 15, 'bold'), padx=20, pady=20,
+                         width=10, height=10, relief=tk.RAISED, bd=1)
+        label.place(x=Dict_label[key]['posX'], y=Dict_label[key]['posY'], width=Dict_label[key]['len'], height=30)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+# Name_table
+
+''' Функция создает выводы на главной форме win  значения берет из словаря Dict_enter'''
+def Creat_Enter(kassa):
+    global Dict_enter
+    #var = ('Total_Sum', 'Cash', 'Non_cash', 'Transfer')
+    Dict_enter = {1: {'world': 'касса на начало смены', 'value': kassa, 'posX': 50,  'posY': 480, 'len': 100},
+                  'Non_cash': {'world': 'Безнал',       'value': 0, 'posX': 300, 'posY': 480, 'len': 100},
+                  'Cash':     {'world': 'Наличка',      'value': 0, 'posX': 410, 'posY': 480, 'len': 100},
+                  'Transfer': {'world': 'Перевод',      'value': 0, 'posX': 520, 'posY': 480, 'len': 100},
+                  'Total_Sum': {'world': 'Итого',       'value': 0, 'posX': 650, 'posY': 480, 'len': 100},
+                  'Cash_box': {'world': 'Касса',        'value': 0, 'posX': 770, 'posY': 480, 'len': 100}}
+                  # 'Number_line': {'world': 'Касса',     'value': 0, 'posX': 820, 'posY': 350, 'len': 30}}
+    for keys_1 in dict_primary:
+        for keys_2 in dict_primary[keys_1]:
+            if keys_2 == 'Total_Sum':
+                Dict_enter['Total_Sum']['value'] = int(Dict_enter['Total_Sum']['value']) + int(dict_primary[keys_1][keys_2])
+            if keys_2 == 'Payment':
+                if dict_primary[keys_1]['Payment'] == 'Non_cash':
+                    Dict_enter['Non_cash']['value'] = int(Dict_enter['Non_cash']['value']) + int(dict_primary[keys_1]['Total_Sum'])
+                if dict_primary[keys_1]['Payment'] == 'Transfer':
+                    Dict_enter['Transfer']['value'] = int(Dict_enter['Transfer']['value']) + int(dict_primary[keys_1]['Total_Sum'])
+                if dict_primary[keys_1]['Payment'] == 'Cash':
+                    Dict_enter['Cash']['value'] = int(Dict_enter['Cash']['value']) + int(dict_primary[keys_1]['Total_Sum'])
+                Dict_enter['Cash_box']['value'] = Dict_enter['Cash']['value'] + int(Dict_enter[1]['value'])
+        dict_primary[keys_1]['Cash_box'] = Dict_enter['Cash_box']['value']
+        print(dict_primary[keys_1]['Cash_box'], 'Cash_box')
+    for key in Dict_enter:
+        Enter = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+        Enter.place(x=Dict_enter[key]['posX'], y=Dict_enter[key]['posY'], width=Dict_enter[key]['len'], height=30)
+        Enter.delete(0, tk.END)
+        Enter.insert(0, format_number(Dict_enter[key]['value']))
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+''' Функция создает кнопки на главной форме win  значения берет из словаря Dict_buton'''
+def Creat_buton():
+    Dict_buton = {1: {'world': 'Вычислить', 'color': 'white',  'comand': Calculate_boton, 'posX': 20, 'posY': 150, 'len': 150},
+                  2: {'world': 'Записать', 'color': 'white',   'comand': boton_contribut, 'posX': 20, 'posY': 385, 'len': 150},
+                  3: {'world': 'Удалить строку', 'color': 'white', 'comand': Contribut_Del_boton, 'posX': 600, 'posY': 385, 'len': 180},
+                  4: {'world': 'Admin', 'color': 'white',  'comand': boton_Admin,  'posX': 20, 'posY': 540, 'len': 100},
+                  5: {'world': 'Форма', 'color': 'white',  'comand': boton_form_2, 'posX': 870, 'posY': 20, 'len': 120},
+                  6: {'world': 'Сохранить и закрыть', 'color': 'white', 'comand': Calculate_Close, 'posX': 770, 'posY': 540, 'len': 220}}
+    for key in Dict_buton:
+        buton = tk.Button(win, text=Dict_buton[key]['world'], font=('Arial', 14, 'bold'), command=Dict_buton[key]['comand'])
+        buton.place(x=Dict_buton[key]['posX'], y=Dict_buton[key]['posY'], width=Dict_buton[key]['len'], height=30)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def creat_treeviuw():
+    global dict_cont
+    dict_cont = {"": {1: "#0", 2: 0, 3: 0}, "Id": {1: "#1", 2: 60, 3: 60}, "Дата": {1: "#2", 2: 120, 3: 120},
+                 "Телефон": {1: "#3", 2: 100, 3: 100}, "Администратор": {1: "#4", 2: 100, 3: 100},
+                 "Сервис": {1: "#5", 2: 120, 3: 120},
+                 "Количество": {1: "#6", 2: 80, 3: 80}, "Время": {1: "#7", 2: 80, 3: 80},
+                 "Скидка": {1: "#8", 2: 100, 3: 100},
+                 "Оплата": {1: "#9", 2: 100, 3: 100}, "Сумма": {1: "#10", 2: 90, 3: 100}}
+
+    for key in dict_cont:
+        Teble.column(dict_cont[key][1], width=dict_cont[key][2], minwidth=dict_cont[key][3])
+        Teble.heading(dict_cont[key][1], text=key)
+    Teble.place(x=20, y=205, width=970, height=150)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def Calculate_boton():
+    input_Id.get()
+    if combo_Admin.get() == "":
+        Texts = 'Не выбран администратор'
+        Errors_list(Texts)
+    if combo_Service.get() == 'Prepayment':
+        Output_Sum.delete(0, tk.END)
+        Output_Sum.insert(0, str('1000'))
+        return
+    if combo_Service.get() == 'Free_price':
+        varr = Output_Sum.get()
+        Output_Sum.delete(0, tk.END)
+        Output_Sum.insert(0, str(varr))
+        return
+    Output_Sum.delete(0, tk.END)
+    Output_Discount.delete(0, END)
+    try:
+        if re.findall('[%]', combo_Discount.get())[0] == '%':
+            Variable_Discount = int(re.findall('\d+', combo_Discount.get())[0])
+            var = (int(input_Number.get()) * float(input_Time.get())) * \
+                  int(dict_price[combo_Service.get()][2][Chek_value.get()])
+            if Variable_Discount == 0:
+                Output_Sum.insert(0, (str(var))[:-2])
+                Output_Discount.insert(0, 'Нет')
+            if Variable_Discount != 0:
+                caunt_Discount = (var / 100) * Variable_Discount
+                Variable_Sum = var - caunt_Discount
+                Output_Sum.insert(0, (str(Variable_Sum))[:-2])
+                Output_Discount.insert(0, caunt_Discount)
+    except IndexError:
+        Variable_Discount = int(re.findall('\d+', combo_Discount.get())[0])
+        if Variable_Discount == 30:
+            Output_Sum.insert(0, str(int(input_Number.get()) * int(dict_price[combo_Service.get()][1][Chek_value.get()])))
+            Output_Discount.insert(0, '0.5 Clock')
+        else:
+            Output_Sum.insert(0, str(int(input_Number.get()) * int(dict_price[combo_Service.get()][3][Chek_value.get()])))
+            Output_Discount.insert(0, '2 Clock')
+    return Flag_status
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+counter_day_out = 'Будни'
+
+
+def Chek_butoon_activ():
+    if Chek_value.get() == 0:
+        colors = '#9070CC'
+        counter_day_out = str(current_date) + '  Будни'
+    else:
+        colors = 'red'
+        counter_day_out = str(current_date) + '  Выходной'
+    label_Data = tk.Label(win, text=counter_day_out, bg=colors, fg='white', font=('Arial', 15, 'bold'), padx=20,
+                          pady=20,
+                          width=10, height=10, relief=tk.RAISED, bd=1)
+    label_Data.place(x=20, y=20, width=260, height=30)
+    return counter_day_out
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+Flag_status = 0
+
+
+def boton_contribut():
+    global Id
+    Creat_dict(Id)
+    # Flag_status:  int = Calculate_boton()
+    # if Flag_status == 0:
+    #     label_Attention_status.place(x=200, y=150, width=200, height=30)
+    #     return
+    # if Flag_status == 1:
+    #     label_Attention_status.destroy()
+    if Output_Sum.get() == '':
+        Texts = 'Не сделан расчет суммы'
+        Errors_list(Texts)
+    dict_name = {'Phone': input_Id.get(), 'Date': current_date, 'Admin': combo_Admin.get(),
+                 'Service': combo_Service.get(), 'Number': input_Number.get(), 'Time_game': input_Time.get(),
+                 'Discount': Output_Discount.get(), 'Payment': combo_Payment.get(), 'Total_Sum': Output_Sum.get(),
+                 'Cash_box': 0}
+
+    for key in dict_primary[Id]:
+        if key in dict_name:
+            dict_primary[Id][key] = dict_name[key]
+
+    dict_us = {'Date': 'Date', 'Phone': 'Phone', 'Admin': 'Admin', 'Service': 'Service', 'Number': 'Number',
+               'Time_game':  'Time_game', 'Discount':  'Discount', 'Payment': 'Payment', 'Total_Sum': 'Total_Sum'}
+    List = ("Date", 'Phone', 'Name', 'Admin', 'Service', 'Number', 'Time_game', 'Discount', 'Payment', 'Total_Sum')
+    dict_count = Dict_db(dict_primary, dict_us, List)
+    Creat_Enter()
+    write_window_2(dict_count)
+    Id = Id + 1
+    return dict_primary
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def format_number(chislo):
+    chislo = str(chislo)
+    chislo = chislo[:-3] + ' ' + chislo[-3:]
+    return chislo
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def Calculate_start():
+    kassa = Output_db_column(address_db,  Name_table='Cashbox', name_column=12)[-1]
+    Creat_label()
+    Creat_Enter(kassa)
+    Creat_buton()
+    Id = Output_db_column(address_db, Name_table='Cashbox', name_column=0)[-1]
+    return Id
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def Contribut_Del_boton():
+    del dict_primary[Number_line.get()]
+    Creat_Enter()
+    write_window_2(dict_primary)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+def boton_form_2():
+    address_db = 'server_1.db'
+    Name_table = 'Cashbox'
+    List = ('Date', 'Phone', 'Admin', 'Service', 'Number', 'Time_game', 'Discount', 'Payment', 'Total_Sum', 'Cash_box',
+            'Take away')
+    boton_form(address_db, Name_table,  List)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+def Calculate_Close():
+    def dest():
+        Var_base = Format_data(dict_primary)
+        Input_db(address_db, qwery, Var_base)
+        moot.destroy()
+        win.destroy()
+    moot = Tk()
+    moot.title("Сохранение")
+    moot.geometry("300x100+700+600")    # размер окно приложения и смещения относительно экрана
+    moot.resizable(False, False)        # закрепить окно приложения от изменения размера
+    moot.config(bg='#2F4F4F')
+    label = tk.Label(moot, text=' Сохранить и выйти ?', bg='#909095', fg='black',
+                     font=('Arial', 15, 'bold'), padx=20, pady=20,
+                     width=10, height=10, bd=1)
+    label.place(x=20, y=20, width=260, height=30)
+    buton = tk.Button(moot, text='Ok', font=('Arial', 14, 'bold'), activebackground='#304070', borderwidth=3, command=dest)
+    buton.place(x=100, y=60, width=100, height=30)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+def write_window_2(dict_count):
+    frame_lst = Format_data(dict_count)
+    for record in Teble.get_children():
+        Teble.delete(record)
+    for ror in frame_lst:
+        Teble.insert("", tk.END, values=ror)
+'''/////////////////////////////////////////////////////////////////////////////////////////////////////////////////'''
+
+
+
+win = Tk()
+win.iconphoto(True, tk.PhotoImage(file='11.png'))
+win.title("терминал")               # наименование приложения
+win.image_names()
+win.geometry("1010x600+300+300")    # размер окно приложения и смещения относительно экрана
+win.resizable(False, False)         # закрепить окно приложения от изменения размера
+win.config(bg='#808080')            # цвет фона приложения
+current_date = date.today()         # переменная времени
+
+
+label_Attention_admin = tk.Label(win, text='Не выбран администратор', bg='#9070CC', fg='white',
+                                 font=('Arial', 15, 'bold'), padx=20, pady=20,
+                                 width=10, height=10, relief=tk.RAISED, bd=1)
+label_Attention_status = tk.Label(win, text='Не сделан расчет', bg='#9070CC', fg='white',
+                                  font=('Arial', 15, 'bold'), padx=20, pady=20,
+                                  width=10, height=10, relief=tk.RAISED, bd=1)
+
+style = ttk.Style()
+style.configure("Treeview", font=('Arial', 13, 'bold'), rowheight=25, background='red', fieldbackground='#808080')
+Teble = ttk.Treeview(win)
+Teble['columns'] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+address_db = 'server_1.db'
+Create_db(address_db, form_db)
+
+
+
+Chek_value = tk.IntVar()
+Chek_1 = tk.Checkbutton(win, text='день', font=('Arial', 15, 'bold'), bg='#909090', indicatoron=0,
+                        selectcolor='red', variable=Chek_value, offvalue=0, onvalue=1, command=Chek_butoon_activ)
+Chek_1.place(x=300, y=20, width=90, height=30)
+
+input_Id = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+input_Id.place(x=20, y=95, width=120, height=30)
+
+counter_1 = ('VR Arena', 'VR Classic', 'VR Quest', 'Economy', 'Solemn', 'Legendary', 'VIP', 'Prepayment', 'Free_price')
+combo_Service = ttk.Combobox(win, font=('Arial', 12, 'bold'), values=counter_1, foreground='red', justify=CENTER)
+combo_Service.current(0)
+combo_Service.place(x=160, y=95, width=120, height=30)
+
+counter_2 = ('0 %', '5 %', '7 %', '10 %', '15 %', '20 %', '25 %', '30 min', '2 clock')
+combo_Discount = ttk.Combobox(win, font=('Arial', 12, 'bold'), values=counter_2, justify=CENTER)
+combo_Discount.current(0)
+combo_Discount.place(x=520, y=95, width=90, height=30)
+
+counter_3 = ('Илья', 'Михаил', 'Андрей', 'Олег')
+combo_Admin = ttk.Combobox(win, font=('Arial', 12, 'italic'), values=counter_3, justify=CENTER)
+combo_Admin.current(0)
+combo_Admin.place(x=740, y=20, width=110, height=30)
+
+input_Number = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+input_Number.insert(0, 1)
+input_Number.place(x=300, y=95, width=90, height=30)
+
+input_Time = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+input_Time.place(x=410, y=95, width=90, height=30)
+input_Time.insert(0, 1)
+
+Output_Discount = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+Output_Discount.place(x=630, y=95, width=90, height=30)
+
+Output_Sum = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+Output_Sum.place(x=740, y=95, width=110, height=30)
+
+counter_3 = ('Cash', 'Non_cash', 'Transfer')
+combo_Payment = ttk.Combobox(win, font=('Arial', 11, 'italic'), values=counter_3, foreground='green', justify=CENTER, height=40)
+combo_Payment.current(0)
+combo_Payment.place(x=870, y=95, width=120,height=30)
+
+Number_line = tk.Entry(win, font=('Arial', 12, 'bold'), justify=CENTER)
+Number_line.place(x=800, y=385, width=30, height=30)
+
+creat_treeviuw()
+Id = Calculate_start()
+Id = Id + 1
+global mass
+
+
+
+win.mainloop()
+
+как можно оптимизировать данный код
